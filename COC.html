@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Circle of Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:   #0e1520; --navy-2: #172030; --navy-3: #1f2e42; --navy-4: #273852;
+  --slate:  #3d5068; --slate-l:#6b8299;
+  --amber:  #e8a430; --amber-l:#f5c76a;
+  --text-1: #eeeae3; --text-2: #a8b8c8; --text-3: #607080;
+  --green:  #4caf82; --green-bg:rgba(76,175,130,.10); --green-bd:rgba(76,175,130,.38);
+  --blue:   #5b9bd5; --blue-bg: rgba(91,155,213,.10); --blue-bd: rgba(91,155,213,.38);
+  --red:    #e07060; --red-bg:  rgba(224,112,96,.10);  --red-bd:  rgba(224,112,96,.38);
+  --r:12px; --ease:.18s ease;
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text-1);overflow-x:hidden}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 2rem;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;position:sticky;top:0;z-index:50;background:var(--navy)}
+.logo{font-family:'Fraunces',serif;font-size:1rem;font-weight:300;color:var(--amber);letter-spacing:.02em}
+.logo small{color:var(--text-3);font-family:'DM Sans',sans-serif;font-size:.78rem;margin-left:.5rem}
+.steps{display:flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--navy-3);border:1px solid var(--slate);transition:var(--ease)}
+.dot.active{background:var(--amber);border-color:var(--amber)}
+.dot.done{background:var(--slate-l);border-color:var(--slate-l)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:.4rem;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;transition:var(--ease);border:none;padding:.7rem 1.4rem}
+.btn-amber{background:var(--amber);color:var(--navy)}.btn-amber:hover{background:var(--amber-l)}.btn-amber:disabled{opacity:.3;cursor:not-allowed}
+.btn-ghost{background:transparent;color:var(--text-2);border:1px solid var(--navy-4)}.btn-ghost:hover{border-color:var(--slate);color:var(--text-1)}
+.btn-sm{padding:.45rem .9rem;font-size:.82rem}
+.btn-reset{background:none;border:none;color:var(--text-3);font-size:.8rem;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif;transition:var(--ease)}.btn-reset:hover{color:var(--text-2)}
+
+/* ═══ SCREEN 1 ═══ */
+#s1{align-items:center;justify-content:center;padding:2rem 1rem}
+.ic{width:100%;max-width:540px}
+.eyebrow{font-size:.73rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);font-weight:500;margin-bottom:1rem}
+.ic h1{font-family:'Fraunces',serif;font-size:clamp(1.7rem,4vw,2.4rem);font-weight:300;line-height:1.25;margin-bottom:.6rem}
+.ic h1 em{font-style:italic;color:var(--amber)}
+.ic>p{color:var(--text-2);font-size:.95rem;font-weight:300;line-height:1.65;margin-bottom:2rem}
+.irow{display:flex;gap:.6rem;margin-bottom:.75rem}
+.irow input{flex:1;background:var(--navy-2);border:1px solid var(--navy-3);border-radius:var(--r);padding:.75rem 1rem;font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--text-1);outline:none;transition:var(--ease)}
+.irow input:focus{border-color:var(--amber)}.irow input::placeholder{color:var(--text-3)}
+.btn-circle{width:42px;height:42px;border-radius:50%;background:var(--amber);color:var(--navy);border:none;font-size:1.3rem;cursor:pointer;transition:var(--ease);flex-shrink:0}.btn-circle:hover{background:var(--amber-l)}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;min-height:1.5rem;margin:1rem 0 1.75rem}
+.chip{background:var(--navy-2);border:1px solid var(--navy-3);border-radius:100px;padding:.35rem .8rem;font-size:.84rem;display:flex;align-items:center;gap:.45rem;animation:pop .18s ease}
+@keyframes pop{from{transform:scale(.75);opacity:0}to{transform:scale(1);opacity:1}}
+.chip-x{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:1rem;line-height:1;padding:0;transition:var(--ease)}.chip-x:hover{color:var(--red)}
+.hint{font-size:.78rem;color:var(--text-3);margin-bottom:1.75rem}
+.ia{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center}
+
+/* ═══ SCREEN 2 ═══ */
+#s2{flex-direction:column;overflow:hidden}
+#s2 .body{display:flex;flex:1;overflow:hidden}
+.arena{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:0}
+
+/* Concentric rings — stacked in DOM order so inner is on top */
+.ring{position:absolute;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;transition:background .15s}
+#ring-concern  {width:580px;height:580px;border:2px dashed var(--red-bd);  background:var(--red-bg); pointer-events:all}
+#ring-influence{width:380px;height:380px;border:2px dashed var(--blue-bd); background:var(--blue-bg);pointer-events:all}
+#ring-control  {width:195px;height:195px;border:2px solid var(--green-bd); background:var(--green-bg);pointer-events:all}
+.ring.drag-over{filter:brightness(1.18)}
+.ring-label{font-family:'Fraunces',serif;font-weight:300;font-size:.88rem;text-align:center;margin-top:.85rem;padding:0 1.5rem;pointer-events:none;user-select:none;line-height:1.3}
+.ring-sub{font-size:.68rem;font-weight:300;text-align:center;pointer-events:none;user-select:none;padding:0 1rem;margin-top:.2rem;line-height:1.4}
+#ring-concern  .ring-label{color:rgba(224,112,96,.78)} #ring-concern  .ring-sub{color:rgba(224,112,96,.5)}
+#ring-influence .ring-label{color:rgba(91,155,213,.85)} #ring-influence .ring-sub{color:rgba(91,155,213,.55)}
+#ring-control  .ring-label{color:rgba(76,175,130,.9);font-size:.8rem} #ring-control .ring-sub{display:none}
+
+.tray{position:absolute;bottom:1.2rem;left:50%;transform:translateX(-50%);display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;max-width:92%;z-index:30}
+
+/* Cards */
+.card{background:var(--navy-3);border:1px solid var(--navy-4);border-radius:8px;padding:.45rem .8rem;font-size:.82rem;cursor:grab;user-select:none;transition:transform .12s,box-shadow .12s;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;position:absolute;z-index:20;touch-action:none}
+.card:hover{transform:scale(1.04);box-shadow:0 4px 18px rgba(0,0,0,.45)}
+.card.dragging{opacity:.88;transform:scale(1.07) rotate(1.5deg);box-shadow:0 8px 30px rgba(0,0,0,.6);cursor:grabbing;z-index:100}
+.card.in-control  {border-color:var(--green-bd);background:rgba(76,175,130,.14);color:#b6f0d5}
+.card.in-influence{border-color:var(--blue-bd); background:rgba(91,155,213,.14);color:#b8d8f5}
+.card.in-concern  {border-color:var(--red-bd);  background:rgba(224,112,96,.12);color:#f5c8be}
+.card.unsorted{position:static}
+
+/* Sidebar */
+.sidebar{width:210px;flex-shrink:0;border-left:1px solid rgba(255,255,255,.06);padding:1.4rem 1.1rem;display:flex;flex-direction:column;gap:1.2rem;overflow-y:auto}
+.sb-title{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);font-weight:500;margin-bottom:.6rem}
+.sb-row{display:flex;align-items:center;justify-content:space-between;font-size:.84rem;color:var(--text-2);padding:.35rem 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.badge{border-radius:100px;padding:.1rem .55rem;font-size:.74rem}
+.bg{background:var(--green-bg);color:var(--green)}.bb{background:var(--blue-bg);color:var(--blue)}.br{background:var(--red-bg);color:var(--red)}.bn{background:var(--navy-3);color:var(--text-3)}
+.sb-note{font-size:.82rem;color:var(--text-2);line-height:1.65;font-weight:300}
+.sb-legend{display:flex;flex-direction:column;gap:.5rem}
+.leg{display:flex;align-items:flex-start;gap:.5rem;font-size:.78rem;color:var(--text-2);line-height:1.4}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:.22rem}
+
+/* ═══ SCREEN 3 ═══ */
+#s3{overflow:auto}
+#s3 .body{display:flex;flex:1;min-height:0}
+.sum-left{width:280px;flex-shrink:0;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;overflow-y:auto}
+.sum-right{flex:1;overflow-y:auto}
+.phd{padding:1.25rem 1.4rem .9rem;border-bottom:1px solid rgba(255,255,255,.06)}
+.phd h2{font-family:'Fraunces',serif;font-size:1.05rem;font-weight:300;margin-bottom:.2rem}
+.phd p{font-size:.78rem;color:var(--text-3)}
+.stats-bar{display:flex;gap:1rem;padding:1rem 1.4rem;border-bottom:1px solid rgba(255,255,255,.06);flex-wrap:wrap}
+.stat .n{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:300;line-height:1}
+.stat .l{font-size:.72rem;color:var(--text-3);margin-top:.15rem}
+.items-list{padding:1rem 1.1rem}
+.igh{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;font-weight:500;margin:.9rem 0 .5rem;display:flex;align-items:center;gap:.35rem}
+.item-pill{display:flex;align-items:center;gap:.55rem;padding:.5rem .65rem;border-radius:8px;font-size:.84rem;cursor:pointer;margin-bottom:.35rem;transition:var(--ease);border:1px solid transparent}
+.item-pill:hover{background:var(--navy-2)}.item-pill.active{background:var(--navy-2);border-color:var(--amber)}
+.pill-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* Content area */
+.ca{padding:1.75rem 2rem}
+.intro-block{margin-bottom:2rem}
+.intro-block h2{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:300;margin-bottom:.5rem}
+.intro-block h2 em{color:var(--amber);font-style:italic}
+.intro-block p{color:var(--text-2);font-size:.92rem;line-height:1.7;font-weight:300}
+.zone-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;margin-bottom:2rem}
+.zc{border-radius:var(--r);padding:1.1rem 1.2rem;border:1px solid}
+.zc.gc{background:var(--green-bg);border-color:var(--green-bd)}.zc.bc{background:var(--blue-bg);border-color:var(--blue-bd)}.zc.rc{background:var(--red-bg);border-color:var(--red-bd)}
+.zc h3{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;font-weight:500;margin-bottom:.55rem}
+.zc.gc h3{color:var(--green)}.zc.bc h3{color:var(--blue)}.zc.rc h3{color:var(--red)}
+.zc .im{font-size:.84rem;color:var(--text-2);line-height:1.8}.zc .im em{font-style:normal;color:var(--text-3)}
+.zc p{font-size:.83rem;color:var(--text-2);line-height:1.6;font-weight:300;margin-top:.6rem}
+.adv-sec{margin-bottom:2rem}
+.adv-sec h2{font-family:'Fraunces',serif;font-size:1.2rem;font-weight:300;margin-bottom:.2rem}
+.adv-sec>p{color:var(--text-2);font-size:.86rem;margin-bottom:1.25rem;font-weight:300}
+.adv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem}
+.adv-card{background:var(--navy-2);border:1px solid var(--navy-3);border-radius:var(--r);padding:1.1rem 1.15rem}
+.adv-card .icon{font-size:1.3rem;margin-bottom:.6rem}
+.adv-card h4{font-size:.88rem;font-weight:500;color:var(--amber-l);margin-bottom:.4rem}
+.adv-card p{font-size:.82rem;color:var(--text-2);line-height:1.65;font-weight:300}
+.quote-block{border-left:2px solid var(--amber);padding:.75rem 1.1rem;margin-bottom:2rem;background:rgba(232,164,48,.05);border-radius:0 var(--r) var(--r) 0}
+.quote-block blockquote{font-family:'Fraunces',serif;font-style:italic;font-size:1rem;font-weight:300;color:var(--text-1);line-height:1.6}
+.quote-block cite{font-size:.78rem;color:var(--text-3);display:block;margin-top:.4rem;font-style:normal}
+.takeaway{background:var(--navy-2);border:1px solid var(--navy-3);border-radius:var(--r);padding:1.25rem 1.4rem;margin-bottom:2rem}
+.takeaway h3{font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);font-weight:500;margin-bottom:.75rem}
+.takeaway ul{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.takeaway li{font-size:.86rem;color:var(--text-2);line-height:1.6;font-weight:300;display:flex;gap:.6rem}
+.takeaway li::before{content:'→';color:var(--amber);flex-shrink:0}
+.item-detail{background:var(--navy-2);border:1px solid var(--navy-3);border-radius:var(--r);padding:1.3rem 1.4rem;margin-bottom:2rem;animation:sup .2s ease}
+@keyframes sup{from{transform:translateY(6px);opacity:0}to{transform:translateY(0);opacity:1}}
+.item-detail h3{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:300;margin-bottom:.75rem}
+.item-detail h3 span{color:var(--amber)}
+.dsteps{display:flex;flex-direction:column;gap:.75rem}
+.dstep{display:flex;gap:.75rem}
+.snum{width:22px;height:22px;border-radius:50%;font-size:.72rem;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem}
+.stxt{font-size:.86rem;color:var(--text-2);line-height:1.65;font-weight:300}.stxt strong{color:var(--text-1);font-weight:500}
+
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--navy-3);border-radius:2px}
+
+@media(max-width:860px){
+  #ring-concern{width:420px;height:420px}#ring-influence{width:275px;height:275px}#ring-control{width:145px;height:145px}
+  .sidebar{width:170px}.sum-left{width:230px}.ca{padding:1.25rem}
+}
+@media(max-width:600px){
+  #ring-concern{width:300px;height:300px}#ring-influence{width:200px;height:200px}#ring-control{width:108px;height:108px}
+  .sidebar{display:none}#s3 .body{flex-direction:column}.sum-left{width:100%;max-height:240px;border-right:none;border-bottom:1px solid rgba(255,255,255,.06)}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ SCREEN 1: INPUT ══════════ -->
+<section class="screen active" id="s1">
+  <header>
+    <div class="logo">Circle of Control <small>a clarity exercise</small></div>
+    <div class="steps"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
+  </header>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:2rem 1rem">
+    <div class="ic">
+      <div class="eyebrow">Step 1 of 3</div>
+      <h1>What's on your <em>mind?</em></h1>
+      <p>List anything causing you stress, worry, or uncertainty — work, health, relationships, money, the world. Get it out of your head and onto the page. You'll sort them in the next step.</p>
+      <div class="irow">
+        <input type="text" id="cin" placeholder="e.g. Job security, my sleep, the news…" maxlength="80" autocomplete="off">
+        <button class="btn-circle" id="btn-add">+</button>
+      </div>
+      <p class="hint">Press Enter or click + to add. Aim for 4–8 items.</p>
+      <div class="chips" id="chips"></div>
+      <div class="ia">
+        <button class="btn btn-amber" id="btn-sort" disabled>Sort them out →</button>
+        <button class="btn btn-ghost" id="btn-eg">Load examples</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ SCREEN 2: SORT ══════════ -->
+<section class="screen" id="s2">
+  <header>
+    <div class="logo">Circle of Control <small>a clarity exercise</small></div>
+    <div style="display:flex;align-items:center;gap:1.25rem">
+      <div class="steps"><div class="dot done"></div><div class="dot active"></div><div class="dot"></div></div>
+      <button class="btn btn-amber btn-sm" id="btn-sum" disabled>See my summary →</button>
+    </div>
+  </header>
+  <div class="body">
+    <div class="arena" id="arena">
+      <div class="ring" id="ring-concern">
+        <div class="ring-label">Circle of Concern</div>
+        <div class="ring-sub">Matters to me, but I can't change it</div>
+      </div>
+      <div class="ring" id="ring-influence">
+        <div class="ring-label">Circle of Influence</div>
+        <div class="ring-sub">I can partly shape this</div>
+      </div>
+      <div class="ring" id="ring-control">
+        <div class="ring-label">I control this</div>
+      </div>
+      <div class="tray" id="tray"></div>
+    </div>
+    <aside class="sidebar">
+      <div>
+        <div class="sb-title">Progress</div>
+        <div id="sbcounts"></div>
+      </div>
+      <div>
+        <div class="sb-title">How to sort</div>
+        <div class="sb-legend">
+          <div class="leg"><span class="leg-dot" style="background:var(--green)"></span>Inner — your thoughts, choices, habits &amp; actions</div>
+          <div class="leg"><span class="leg-dot" style="background:var(--blue)"></span>Middle — things you can partly shape with effort</div>
+          <div class="leg"><span class="leg-dot" style="background:var(--red)"></span>Outer — external events, other people, circumstances</div>
+        </div>
+      </div>
+      <p class="sb-note">Drag each card into the ring that best fits. When in doubt, use the middle ring.</p>
+      <div style="margin-top:auto"><button class="btn-reset" id="btn-back">← Start over</button></div>
+    </aside>
+  </div>
+</section>
+
+<!-- ══════════ SCREEN 3: SUMMARY ══════════ -->
+<section class="screen" id="s3">
+  <header>
+    <div class="logo">Circle of Control <small>a clarity exercise</small></div>
+    <div style="display:flex;align-items:center;gap:1.25rem">
+      <div class="steps"><div class="dot done"></div><div class="dot done"></div><div class="dot active"></div></div>
+      <button class="btn-reset" id="btn-restart" style="font-size:.82rem">↺ Start over</button>
+    </div>
+  </header>
+  <div class="body" id="s3body">
+    <div class="sum-left">
+      <div class="phd"><h2>Your concerns</h2><p>Click any item for specific guidance</p></div>
+      <div class="stats-bar" id="statsbar"></div>
+      <div class="items-list" id="itemslist"></div>
+    </div>
+    <div class="sum-right"><div class="ca" id="ca"></div></div>
+  </div>
+</section>
+
+<script>
+// ══════════════════════
+// STATE & CONFIG
+// ══════════════════════
+let concerns=[], placements={}, cardPos={}, dragState=null;
+
+const EXAMPLES=['My sleep habits','The economy','My morning routine',
+  'What colleagues think of me','My diet choices','Climate change',
+  'How I respond to stress','My partner\'s mood','Job security'];
+
+const ADVICE={
+  control:{
+    heading:'Things in your control',
+    intro:'This is where your energy belongs. Epictetus wrote: "Within our power are opinion, motivation, desire, aversion — whatever is of our own doing." Your thoughts, habits, choices, and responses are always yours to shape.',
+    steps:[
+      {t:'Define one concrete action',b:'For each item, name a single specific next step — not "get healthier" but "walk 20 minutes after breakfast tomorrow." Specificity converts intention into momentum.'},
+      {t:'Align with your values',b:'Ask: does my current behaviour on this match what I actually care about? When actions and values diverge, anxiety rises. Closing that gap is genuinely calming.'},
+      {t:'Build a small, stackable habit',b:'Attach the action to something you already do: "After I make coffee, I will spend 5 minutes on X." Small and consistent always beats ambitious and sporadic.'},
+      {t:'Acknowledge your progress',b:'At the end of each day, name one thing you actually controlled. Progress recognition builds self-efficacy and makes the next day easier.'},
+    ]
+  },
+  influence:{
+    heading:'Things you can partly influence',
+    intro:'This is the grey zone — not fully in your hands, but not entirely out of them either. Your effort, preparation, and communication can shift outcomes here, even without guaranteeing them.',
+    steps:[
+      {t:'Focus inputs, not outcomes',b:'You control how well you prepare for an interview, not whether you get the job. Direct your energy to the inputs — your effort, your preparation — and then release attachment to results.'},
+      {t:'Find your highest-leverage move',b:'What one specific action could meaningfully improve this situation? Do that thing — not everything, just the most impactful move available to you right now.'},
+      {t:'Communicate deliberately',b:'Many influence-zone concerns involve other people. Honest, thoughtful communication often shifts things more than passive worry. Have the conversation you\'ve been putting off.'},
+      {t:'Accept that outcomes aren\'t guaranteed',b:'You can do everything right and still not get the result. That\'s not failure — that\'s the honest nature of influence. Do your best, then let the outcome go.'},
+    ]
+  },
+  concern:{
+    heading:'Things outside your control',
+    intro:'These live in the circle of concern — the economy, others\' behaviour, past events, the news. As Ryan Holiday put it: "We cannot control the world around us, but we can control our reactions to it."',
+    steps:[
+      {t:'Name it to tame it',b:'Consciously labelling a worry as "outside my control" has measurable calming effects. Simply saying: "This is in the concern circle — I cannot change it" can interrupt rumination loops.'},
+      {t:'Practise radical acceptance',b:'Acceptance isn\'t approval — it\'s acknowledging reality as it is. You can care deeply about something and still accept you cannot control it. Acceptance frees you to act where you can.'},
+      {t:'Redirect your attention deliberately',b:'When you catch yourself spiralling about something uncontrollable, redirect: "What\'s one thing I *can* do right now?" Even a tiny controllable action interrupts the spiral effectively.'},
+      {t:'Limit doom-scrolling and news loops',b:'Constant exposure to uncontrollable events expands the concern circle in your mind. Set intentional limits on news and social media to protect your most valuable resource: attention.'},
+    ]
+  }
+};
+
+const HINTS=[
+  {w:['sleep','rest','tired','fatigue'],t:'Sleep is highly controllable. Start with one change: a consistent bedtime, no screens 30 minutes before bed, or a cooler room. Environmental tweaks often matter more than willpower.'},
+  {w:['exercise','gym','fitness','walk','run'],t:'Movement is one of the highest-leverage controllables for mental health. Start ridiculously small — a 10-minute walk counts. Consistency always beats intensity.'},
+  {w:['diet','eating','food','weight','nutrition'],t:'You control what enters your basket at the supermarket more than what you eat in the moment. Design your environment: if it\'s not in the house, it\'s harder to eat.'},
+  {w:['habit','routine','morning','evening','schedule'],t:'Routines reduce decision fatigue and make good behaviour automatic. Protect your morning — the first hour of the day tends to set the tone for everything that follows.'},
+  {w:['economy','inflation','market','recession','cost of living'],t:'Economic conditions sit in the concern circle. What you can control: your spending, savings rate, skills, and how you respond emotionally to financial stress.'},
+  {w:['climate','weather','environment','carbon'],t:'Climate is a concern-circle issue for most individuals. Channel that concern into one controllable action — diet, travel choices, voting, community — rather than diffuse anxiety.'},
+  {w:['news','media','politics','election','social media'],t:'News is designed to keep you engaged with things you cannot change. Set a deliberate news window (e.g. 20 minutes at lunch) and protect the rest of your attention for things you can act on.'},
+  {w:['job','career','work','employment','redundan','layoff'],t:'Job security straddles influence and concern. What you can control: your skills, relationships, performance, and how many options you\'re building quietly in the background.'},
+  {w:['health','illness','pain','condition','sick','chronic'],t:'Many health factors sit in the influence ring. You can\'t guarantee outcomes, but sleep, movement, stress management, and diet genuinely shift the odds — focus there.'},
+  {w:['relationship','partner','spouse','family','friend','colleague'],t:'You can\'t control others\' feelings or actions, but you can control your own behaviour, communication style, and where you set boundaries. Often the dynamic shifts when one person shifts.'},
+  {w:['think','opinion','judg','perceive','reputation','approval'],t:'What others think of you is firmly in the concern circle. You can influence it slightly through your actions, but you cannot control it. Epictetus made this point the centrepiece of Stoic freedom.'},
+  {w:['stress','anxiety','worry','overwhelm','panic'],t:'Your response to stress is trainable. Breathing techniques, mindfulness, journalling, and cognitive reframing all give you real handles on anxiety. The worry habit itself can be rewired.'},
+  {w:['money','finance','debt','saving','salary','income'],t:'Finances partly sit in the influence circle. Income growth takes time; spending is more immediately controllable. Start with outgoings, then build income options over time.'},
+];
+
+// ══════════════════════
+// UTILITIES
+// ══════════════════════
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function findHint(text){const low=text.toLowerCase();for(const h of HINTS)if(h.w.some(w=>low.includes(w)))return h.t;return null}
+
+// ══════════════════════
+// SCREEN 1
+// ══════════════════════
+const cinEl=document.getElementById('cin');
+const chipsEl=document.getElementById('chips');
+const btnSort=document.getElementById('btn-sort');
+
+function addConcern(txt){
+  txt=txt.trim();
+  if(!txt||concerns.find(c=>c.text.toLowerCase()===txt.toLowerCase()))return;
+  const id='c'+Date.now()+Math.random().toString(36).slice(2,5);
+  concerns.push({id,text:txt});placements[id]='unsorted';
+  renderChips();cinEl.value='';btnSort.disabled=false;
+}
+function removeChip(id){concerns=concerns.filter(c=>c.id!==id);delete placements[id];renderChips();btnSort.disabled=concerns.length<1}
+function renderChips(){
+  chipsEl.innerHTML='';
+  concerns.forEach(c=>{
+    const el=document.createElement('div');el.className='chip';
+    el.innerHTML=`<span>${esc(c.text)}</span><button class="chip-x">×</button>`;
+    el.querySelector('.chip-x').onclick=()=>removeChip(c.id);
+    chipsEl.appendChild(el);
+  });
+}
+document.getElementById('btn-add').onclick=()=>addConcern(cinEl.value);
+cinEl.addEventListener('keydown',e=>{if(e.key==='Enter')addConcern(cinEl.value)});
+document.getElementById('btn-eg').onclick=()=>EXAMPLES.forEach(e=>addConcern(e));
+btnSort.onclick=()=>{initSort();show('s2')};
+
+// ══════════════════════
+// SCREEN 2 — DRAG
+// ══════════════════════
+function initSort(){concerns.forEach(c=>{placements[c.id]='unsorted'});renderSort()}
+
+function renderSort(){
+  const arena=document.getElementById('arena');
+  arena.querySelectorAll('.card').forEach(el=>el.remove());
+  const tray=document.getElementById('tray');tray.innerHTML='';
+  concerns.forEach(c=>{
+    const card=makeCard(c);
+    if(placements[c.id]==='unsorted'){card.classList.add('unsorted');card.style.position='static';tray.appendChild(card)}
+    else{const p=cardPos[c.id];if(p){card.style.left=p.x+'px';card.style.top=p.y+'px'}
+      if(placements[c.id]==='control')card.classList.add('in-control');
+      if(placements[c.id]==='influence')card.classList.add('in-influence');
+      if(placements[c.id]==='concern')card.classList.add('in-concern');
+      arena.appendChild(card)}
+  });
+  updateCounts();
+}
+
+function makeCard(c){
+  const el=document.createElement('div');el.className='card';el.dataset.id=c.id;el.textContent=c.text;
+  el.addEventListener('mousedown',e=>{if(e.button===0){e.preventDefault();startDrag(el,e.clientX,e.clientY)}});
+  el.addEventListener('touchstart',e=>{e.preventDefault();startDrag(el,e.touches[0].clientX,e.touches[0].clientY)},{passive:false});
+  return el;
+}
+
+function startDrag(card,cx,cy){
+  const arena=document.getElementById('arena');const id=card.dataset.id;
+  const rect=card.getBoundingClientRect();const ar=arena.getBoundingClientRect();
+  if(placements[id]==='unsorted'){card.classList.remove('unsorted');card.style.position='absolute';card.style.left=(rect.left-ar.left)+'px';card.style.top=(rect.top-ar.top)+'px';arena.appendChild(card)}
+  card.classList.add('dragging');
+  dragState={id,card,ox:cx-rect.left,oy:cy-rect.top,ar};
+  document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+  document.addEventListener('touchmove',onTMove,{passive:false});document.addEventListener('touchend',onTUp);
+}
+
+function onMove(e){moveCard(e.clientX,e.clientY)}
+function onTMove(e){e.preventDefault();moveCard(e.touches[0].clientX,e.touches[0].clientY)}
+function moveCard(cx,cy){
+  if(!dragState)return;const{card,ox,oy,ar}=dragState;
+  card.style.left=(cx-ar.left-ox)+'px';card.style.top=(cy-ar.top-oy)+'px';
+  const r=card.getBoundingClientRect();const pcx=r.left+r.width/2,pcy=r.top+r.height/2;
+  ['ring-control','ring-influence','ring-concern'].forEach(rid=>{
+    document.getElementById(rid).classList.toggle('drag-over',ptInCirc(pcx,pcy,document.getElementById(rid).getBoundingClientRect()))
+  });
+}
+
+function onUp(e){endDrag(e.clientX,e.clientY)}
+function onTUp(e){const t=e.changedTouches[0];endDrag(t.clientX,t.clientY)}
+function endDrag(cx,cy){
+  if(!dragState)return;
+  const{id,card,ox,oy,ar}=dragState;
+  ['ring-control','ring-influence','ring-concern'].forEach(rid=>document.getElementById(rid).classList.remove('drag-over'));
+  card.classList.remove('dragging','in-control','in-influence','in-concern');
+  const r=card.getBoundingClientRect();const pcx=r.left+r.width/2,pcy=r.top+r.height/2;
+  const inC=ptInCirc(pcx,pcy,document.getElementById('ring-control').getBoundingClientRect());
+  const inI=ptInCirc(pcx,pcy,document.getElementById('ring-influence').getBoundingClientRect());
+  const inN=ptInCirc(pcx,pcy,document.getElementById('ring-concern').getBoundingClientRect());
+  const x=cx-ar.left-ox,y=cy-ar.top-oy;
+  if(inC){placements[id]='control';card.classList.add('in-control');cardPos[id]={x,y}}
+  else if(inI){placements[id]='influence';card.classList.add('in-influence');cardPos[id]={x,y}}
+  else if(inN){placements[id]='concern';card.classList.add('in-concern');cardPos[id]={x,y}}
+  else{placements[id]='unsorted';card.classList.add('unsorted');card.style.position='static';document.getElementById('tray').appendChild(card)}
+  dragState=null;
+  document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+  document.removeEventListener('touchmove',onTMove);document.removeEventListener('touchend',onTUp);
+  updateCounts();
+}
+
+function ptInCirc(px,py,rect){const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2,r=rect.width/2;return Math.hypot(px-cx,py-cy)<=r}
+
+function updateCounts(){
+  const ct={control:0,influence:0,concern:0,unsorted:0};
+  concerns.forEach(c=>ct[placements[c.id]]++);
+  document.getElementById('sbcounts').innerHTML=`
+    <div class="sb-row">In control   <span class="badge bg">${ct.control}</span></div>
+    <div class="sb-row">Can influence <span class="badge bb">${ct.influence}</span></div>
+    <div class="sb-row">Concern only  <span class="badge br">${ct.concern}</span></div>
+    <div class="sb-row">Unsorted      <span class="badge bn">${ct.unsorted}</span></div>`;
+  document.getElementById('btn-sum').disabled=ct.unsorted>0||concerns.length===0;
+}
+
+document.getElementById('btn-sum').onclick=()=>{buildSummary();show('s3')};
+document.getElementById('btn-back').onclick=()=>show('s1');
+
+// ══════════════════════
+// SCREEN 3 — SUMMARY
+// ══════════════════════
+function buildSummary(){
+  const ctrl=concerns.filter(c=>placements[c.id]==='control');
+  const infl=concerns.filter(c=>placements[c.id]==='influence');
+  const cnc =concerns.filter(c=>placements[c.id]==='concern');
+
+  // Stats
+  document.getElementById('statsbar').innerHTML=`
+    <div class="stat"><div class="n" style="color:var(--green)">${ctrl.length}</div><div class="l">control</div></div>
+    <div class="stat"><div class="n" style="color:var(--blue)">${infl.length}</div><div class="l">influence</div></div>
+    <div class="stat"><div class="n" style="color:var(--red)">${cnc.length}</div><div class="l">concern</div></div>`;
+
+  // Items list
+  const list=document.getElementById('itemslist');list.innerHTML='';
+  [['control','var(--green)','In my control'],['influence','var(--blue)','Can influence'],['concern','var(--red)','Concern only']].forEach(([zone,color,label])=>{
+    const items=concerns.filter(c=>placements[c.id]===zone);if(!items.length)return;
+    list.innerHTML+=`<div class="igh" style="color:${color}">${label}</div>`;
+    items.forEach(c=>{
+      const pill=document.createElement('div');pill.className='item-pill';pill.dataset.id=c.id;
+      pill.innerHTML=`<span class="pill-dot" style="background:${color}"></span>${esc(c.text)}`;
+      pill.onclick=()=>showDetail(c,zone,pill);
+      list.appendChild(pill);
+    });
+  });
+
+  renderOverview(ctrl,infl,cnc);
+
+  document.getElementById('btn-restart').onclick=()=>{
+    concerns=[];placements={};cardPos={};
+    document.getElementById('chips').innerHTML='';
+    document.getElementById('btn-sort').disabled=true;
+    show('s1');
+  };
+}
+
+function renderOverview(ctrl,infl,cnc){
+  const ca=document.getElementById('ca');
+  const dom=ctrl.length>=infl.length&&ctrl.length>=cnc.length?'control':infl.length>=cnc.length?'influence':'concern';
+  const aff={control:'Good news — most of your concerns sit in areas where your actions make a direct difference.',influence:'You have real leverage here. Focused effort and deliberate communication will shift things.',concern:'Several concerns are outside your control. The goal now is to redirect that mental energy wisely.'};
+
+  let html=`<div class="intro-block"><h2>Your <em>clarity snapshot</em></h2><p>${aff[dom]}</p></div>`;
+
+  // Zone summary cards
+  html+='<div class="zone-cards">';
+  [{key:'control',items:ctrl,cls:'gc',color:'var(--green)',label:'Circle of Control',blurb:'Your thoughts, habits, choices, and responses — always within reach.'},{key:'influence',items:infl,cls:'bc',color:'var(--blue)',label:'Circle of Influence',blurb:'Outcomes aren\'t guaranteed, but your effort and preparation genuinely matter here.'},{key:'concern',items:cnc,cls:'rc',color:'var(--red)',label:'Circle of Concern',blurb:'External events and other people. Care without carrying — acceptance is the tool.'}].forEach(z=>{
+    const il=z.items.length?z.items.map(c=>`<div>${esc(c.text)}</div>`).join(''):`<em>Nothing here</em>`;
+    html+=`<div class="zc ${z.cls}"><h3>${z.label}</h3><div class="im">${il}</div><p>${z.blurb}</p></div>`;
+  });
+  html+='</div>';
+
+  html+=`<div class="quote-block"><blockquote>"Happiness and freedom begin with a clear understanding of one principle: some things are within our control, and some things are not."</blockquote><cite>— Epictetus, The Art of Living</cite></div>`;
+
+  // Advice per populated zone
+  [{key:'control',items:ctrl},{key:'influence',items:infl},{key:'concern',items:cnc}].filter(z=>z.items.length>0).forEach(z=>{
+    const a=ADVICE[z.key];
+    html+=`<div class="adv-sec"><h2>${a.heading}</h2><p>${a.intro}</p><div class="adv-grid">`;
+    a.steps.forEach((s,i)=>{html+=`<div class="adv-card"><div class="icon">${['①','②','③','④'][i]}</div><h4>${s.t}</h4><p>${s.b}</p></div>`});
+    html+='</div></div>';
+  });
+
+  html+=`<div class="takeaway"><h3>Key takeaways</h3><ul>
+    <li>Your thoughts, habits, and responses are always within your control — start there.</li>
+    <li>Influence-circle items reward effort and preparation; release attachment to outcomes.</li>
+    <li>Concern-circle items deserve acknowledgement, not anxiety — redirect your attention.</li>
+    <li>Click any item on the left panel for specific, tailored guidance on that concern.</li>
+  </ul></div>`;
+
+  ca.innerHTML=html;
+}
+
+function showDetail(concern,zone,pillEl){
+  document.querySelectorAll('.item-pill').forEach(p=>p.classList.remove('active'));
+  pillEl.classList.add('active');
+  const ca=document.getElementById('ca');
+  ca.querySelector('.item-detail')?.remove();
+  const a=ADVICE[zone];const hint=findHint(concern.text);
+  const zc={control:'var(--green)',influence:'var(--blue)',concern:'var(--red)'};
+  const zl={control:'Circle of Control',influence:'Circle of Influence',concern:'Circle of Concern'};
+  const color=zc[zone];
+  const el=document.createElement('div');el.className='item-detail';
+  el.innerHTML=`<h3>"<span>${esc(concern.text)}</span>" — ${zl[zone]}</h3>
+    ${hint?`<p style="font-size:.88rem;color:var(--text-2);line-height:1.65;font-weight:300;margin-bottom:1rem;padding:.75rem 1rem;background:rgba(255,255,255,.04);border-radius:8px;border-left:3px solid ${color}">${hint}</p>`:''}
+    <div class="dsteps">
+      ${a.steps.map((s,i)=>`<div class="dstep">
+        <div class="snum" style="background:${color};color:var(--navy)">${i+1}</div>
+        <div class="stxt"><strong>${s.t}:</strong> ${s.b}</div>
+      </div>`).join('')}
+    </div>`;
+  ca.insertBefore(el,ca.firstChild);
+  el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+</script>
+</body>
+</html>
