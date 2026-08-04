@@ -418,9 +418,7 @@ function renderSort(){
     if(placements[c.id]==='unsorted'){card.classList.add('unsorted');card.style.position='static';document.getElementById('tray').appendChild(card)}
     else{
       const p=cardPos[c.id];if(p){card.style.left=p.x+'px';card.style.top=p.y+'px'}
-      if(placements[c.id]==='control')card.classList.add('in-control');
-      if(placements[c.id]==='influence')card.classList.add('in-influence');
-      if(placements[c.id]==='concern')card.classList.add('in-concern');
+      card.classList.add(`in-${placements[c.id]}`);
       arena.appendChild(card);
     }
   });
