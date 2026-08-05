@@ -443,7 +443,8 @@ function startDrag(card,cx,cy){
     arena.appendChild(card);
   }
   card.classList.add('dragging');
-  dragState={id,card,ox:cx-rect.left,oy:cy-rect.top,ar};
+  const rings=['ring-control','ring-influence','ring-concern'].map(rid=>{const el=document.getElementById(rid);return{el,rect:el.getBoundingClientRect()}});
+  dragState={id,card,ox:cx-rect.left,oy:cy-rect.top,ar,rings};
   document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
   document.addEventListener('touchmove',onTMove,{passive:false});document.addEventListener('touchend',onTUp);
 }
@@ -452,11 +453,11 @@ function onMove(e){moveCard(e.clientX,e.clientY)}
 function onTMove(e){e.preventDefault();moveCard(e.touches[0].clientX,e.touches[0].clientY)}
 function moveCard(cx,cy){
   if(!dragState)return;
-  const{card,ox,oy,ar}=dragState;
+  const{card,ox,oy,ar,rings}=dragState;
   card.style.left=(cx-ar.left-ox)+'px';card.style.top=(cy-ar.top-oy)+'px';
   const r=card.getBoundingClientRect();const pcx=r.left+r.width/2,pcy=r.top+r.height/2;
-  ['ring-control','ring-influence','ring-concern'].forEach(rid=>{
-    document.getElementById(rid).classList.toggle('drag-over',ptInCirc(pcx,pcy,document.getElementById(rid).getBoundingClientRect()))
+  rings.forEach(ring=>{
+    ring.el.classList.toggle('drag-over',ptInCirc(pcx,pcy,ring.rect));
   });
 }
 
@@ -464,13 +465,13 @@ function onUp(e){endDrag(e.clientX,e.clientY)}
 function onTUp(e){const t=e.changedTouches[0];endDrag(t.clientX,t.clientY)}
 function endDrag(cx,cy){
   if(!dragState)return;
-  const{id,card,ox,oy,ar}=dragState;
-  ['ring-control','ring-influence','ring-concern'].forEach(rid=>document.getElementById(rid).classList.remove('drag-over'));
+  const{id,card,ox,oy,ar,rings}=dragState;
+  rings.forEach(ring=>ring.el.classList.remove('drag-over'));
   card.classList.remove('dragging','in-control','in-influence','in-concern');
   const r=card.getBoundingClientRect();const pcx=r.left+r.width/2,pcy=r.top+r.height/2;
-  const inC=ptInCirc(pcx,pcy,document.getElementById('ring-control').getBoundingClientRect());
-  const inI=ptInCirc(pcx,pcy,document.getElementById('ring-influence').getBoundingClientRect());
-  const inN=ptInCirc(pcx,pcy,document.getElementById('ring-concern').getBoundingClientRect());
+  const inC=ptInCirc(pcx,pcy,rings[0].rect);
+  const inI=ptInCirc(pcx,pcy,rings[1].rect);
+  const inN=ptInCirc(pcx,pcy,rings[2].rect);
   const x=cx-ar.left-ox,y=cy-ar.top-oy;
   if(inC){placements[id]='control';card.classList.add('in-control');cardPos[id]={x,y}}
   else if(inI){placements[id]='influence';card.classList.add('in-influence');cardPos[id]={x,y}}
