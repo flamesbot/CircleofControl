@@ -1,0 +1,24 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "Circle of Control WebApp",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flamesbot/CircleofControl.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/flamesbot/CircleofControl/issues"
+  },
+  "homepage": "https://github.com/flamesbot/CircleofControl#readme",
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}
