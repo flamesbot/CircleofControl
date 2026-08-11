@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest"
+    "test": "node --test"
   },
   "repository": {
     "type": "git",
