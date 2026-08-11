@@ -4,6 +4,7 @@
   "description": "Circle of Control WebApp",
   "main": "index.js",
   "scripts": {
+    "test": "jest"
     "test": "node --test"
   },
   "repository": {
@@ -19,6 +20,11 @@
   },
   "homepage": "https://github.com/flamesbot/CircleofControl#readme",
   "devDependencies": {
-    "jsdom": "^29.1.1"
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
+    "jsdom": "^24.1.3"
+  },
+  "jest": {
+    "testEnvironment": "jsdom"
   }
 }
