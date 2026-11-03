@@ -4,8 +4,7 @@
   "description": "Circle of Control WebApp",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
-    "test": "node --test"
+    "test": "jest index.test.js --runInBand && node --test findHint.test.js"
   },
   "repository": {
     "type": "git",
